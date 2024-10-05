@@ -3,10 +3,10 @@ package ee.mathiaskivi.speedbuilders.bungeecord.manager;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
-import ee.mathiaskivi.speedbuilders.api.event.GameStateChangeEvent;
+import ee.mathiaskivi.speedbuilders.api.event.ArenaStateChangeEvent;
 import ee.mathiaskivi.speedbuilders.api.event.PlayerLoseEvent;
 import ee.mathiaskivi.speedbuilders.api.event.PlayerWinEvent;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import ee.mathiaskivi.speedbuilders.utility.StatsType;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -53,9 +53,9 @@ public class TimerManager {
 	public int judgeTimerID6;
 
 	public void startTimer() {
-		plugin.getBungeeCord().gameState = GameState.STARTING;
+		plugin.getBungeeCord().state = ArenaState.STARTING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.STARTING, Bukkit.getOnlinePlayers().size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.STARTING, Bukkit.getOnlinePlayers()));
 
 		startTime = plugin.getConfigManager().getConfig("config.yml").getInt("bungeecord.start-time");
 		startTimerID = new BukkitRunnable() {
@@ -67,10 +67,10 @@ public class TimerManager {
 						for (String entry : scoreboard.getEntries()) {
 							scoreboard.resetScores(entry);
 						}
-						if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+						if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 							objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 						}
-						if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+						if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 							objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 						}
 						objective.getScore(plugin.getBungeeCord().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -84,10 +84,10 @@ public class TimerManager {
 						ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 						Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 						Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-						if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+						if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 							objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 						}
-						if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+						if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 							objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 						}
 						objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -232,9 +232,9 @@ public class TimerManager {
 			onlinePlayer.setScoreboard(plugin.getBungeeCord().gameScoreboard);
 		}
 
-		plugin.getBungeeCord().gameState = GameState.GAME_STARTING;
+		plugin.getBungeeCord().state = ArenaState.BEGINNING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.GAME_STARTING, plugin.getBungeeCord().plots.size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.BEGINNING, plugin.getBungeeCord().plots.keySet().stream().map(p -> Bukkit.getPlayer(p)).toList()));
 
 		gameStartTime = (float) plugin.getConfigManager().getConfig("config.yml").getInt("bungeecord.game-start-time");
 		gameStartTimerID = new BukkitRunnable() {
@@ -388,9 +388,9 @@ public class TimerManager {
 			plugin.getBungeeCord().getTemplateManager().loadTemplate(plot.getValue());
 		}
 
-		plugin.getBungeeCord().gameState = GameState.SHOWCASING;
+		plugin.getBungeeCord().state = ArenaState.DISPLAYING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.SHOWCASING, plugin.getBungeeCord().plots.size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.DISPLAYING, plugin.getBungeeCord().plots.keySet().stream().map(p -> Bukkit.getPlayer(p)).toList()));
 
 		showCaseTime = plugin.getConfigManager().getConfig("config.yml").getInt("bungeecord.showcase-time");
 		showCaseTimerID = new BukkitRunnable() {
@@ -471,9 +471,9 @@ public class TimerManager {
 			plugin.getBungeeCord().getTemplateManager().unloadTemplate(plot.getValue());
 		}
 
-		plugin.getBungeeCord().gameState = GameState.BUILDING;
+		plugin.getBungeeCord().state = ArenaState.BUILDING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.BUILDING, plugin.getBungeeCord().plots.size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.BUILDING, plugin.getBungeeCord().plots.keySet().stream().map(p -> Bukkit.getPlayer(p)).toList()));
 
 		buildTime = (float) plugin.getConfigManager().getConfig("config.yml").getInt("bungeecord.build-time");
 		if (plugin.getBungeeCord().currentRound > 2) {
@@ -592,9 +592,9 @@ public class TimerManager {
 
 		plugin.getBungeeCord().getTemplateManager().loadTemplate("guardian");
 
-		plugin.getBungeeCord().gameState = GameState.JUDGING;
+		plugin.getBungeeCord().state = ArenaState.JUDGING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.JUDGING, plugin.getBungeeCord().plots.size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.JUDGING, plugin.getBungeeCord().plots.keySet().stream().map(p -> Bukkit.getPlayer(p)).toList()));
 
 		judgeTime = (float) plugin.getConfigManager().getConfig("config.yml").getInt("bungeecord.judge-time");
 		judgeTimerID1 = new BukkitRunnable() {

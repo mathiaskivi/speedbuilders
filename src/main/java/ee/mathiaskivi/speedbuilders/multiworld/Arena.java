@@ -1,9 +1,9 @@
 package ee.mathiaskivi.speedbuilders.multiworld;
 
-import ee.mathiaskivi.speedbuilders.utility.GameState;
-import org.bukkit.Bukkit;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.ElderGuardian;
+import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ public class Arena {
 
 	private String name;
 	private int neededPlayers;
-	private final ArrayList<String> players = new ArrayList<>();
+	private final ArrayList<Player> players = new ArrayList<>();
 
 	private int startTime;
 	private int startTimerID;
@@ -52,7 +52,7 @@ public class Arena {
 	private String firstPlace = null;
 	private String secondPlace = null;
 	private String thirdPlace = null;
-	private GameState gameState;
+	private ArenaState state;
 
 	public Arena (String name, int startTime, int gameStartTime, int showcaseTime, int buildTime, int judgeTime, int neededPlayers) {
 		this.name = name;
@@ -86,7 +86,7 @@ public class Arena {
 		this.neededPlayers = neededPlayers;
 	}
 
-	public ArrayList<String> getPlayers() {
+	public ArrayList<Player> getPlayers() {
 		return players;
 	}
 
@@ -330,17 +330,17 @@ public class Arena {
 		this.thirdPlace = thirdPlace;
 	}
 
-	public GameState getGameState() {
-		return gameState;
+	public ArenaState getState() {
+		return state;
 	}
 
-	public void setGameState(GameState gameState) {
-		this.gameState = gameState;
+	public void setState(ArenaState state) {
+		this.state = state;
 	}
 
 	public void sendMessage(String message) {
-		for (String arenaPlayer : players) {
-			Bukkit.getPlayer(arenaPlayer).sendMessage(message);
+		for (var player : players) {
+			player.sendMessage(message);
 		}
 	}
 }

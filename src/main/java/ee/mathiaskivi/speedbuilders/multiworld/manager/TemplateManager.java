@@ -61,11 +61,11 @@ public class TemplateManager {
 			if (percent == 100) {
 				float time = Math.round(10 * ((plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".build-time") - arena.getBuildTimeSubtractor()) - arena.getBuildTime())) / 10.0f;
 
-				for (String arenaPlayer : arena.getPlayers()) {
-					Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PERFECT_BUILD").replaceAll("%PLAYER%", player.getName()).replaceAll("%TIME%", time + " " + translate("MAIN-SECONDS"))));
-					Bukkit.getPlayer(arenaPlayer).playSound(Bukkit.getPlayer(arenaPlayer).getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
+				arena.getPlayers().forEach(p -> {
+					p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PERFECT_BUILD").replaceAll("%PLAYER%", player.getName()).replaceAll("%TIME%", time + " " + translate("MAIN-SECONDS"))));
+					p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
 
-					if (Bukkit.getPlayer(arenaPlayer).equals(player)) {
+					if (p.equals(player)) {
 						player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
 						player.sendTitle("", ChatColor.translateAlternateColorCodes('&', translate("TITLE-PERFECT_MATCH")), 0, 2*20, 10);
 
@@ -75,7 +75,7 @@ public class TemplateManager {
 
 						Bukkit.getPluginManager().callEvent(new PlayerPerfectEvent(player, time));
 					}
-				}
+				});
 
 				if (Collections.min(arena.getPlayerPercent().values()) >= 100) {
 					plugin.getMultiWorld().getTimerManager().guardianIsImpressed(arena.getName());

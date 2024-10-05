@@ -1,8 +1,8 @@
 package ee.mathiaskivi.speedbuilders.multiworld.manager;
 
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import ee.mathiaskivi.speedbuilders.multiworld.Arena;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -240,27 +240,27 @@ public class SignManager implements Listener {
 
                         Arena arena = plugin.getMultiWorld().getArenaManager().getArena(e.getLine(1));
                         e.setLine(1, arena.getName());
-                        if (arena.getGameState() == GameState.WAITING) {
+                        if (arena.getState() == ArenaState.WAITING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-WAITING")));
 
                             relativeBlock.setType(Material.LIME_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.STARTING) {
+                        } else if (arena.getState() == ArenaState.STARTING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-STARTING")));
 
                             relativeBlock.setType(Material.ORANGE_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.GAME_STARTING) {
+                        } else if (arena.getState() == ArenaState.BEGINNING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-GAME_STARTING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.SHOWCASING) {
+                        } else if (arena.getState() == ArenaState.DISPLAYING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-SHOWCASING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.BUILDING) {
+                        } else if (arena.getState() == ArenaState.BUILDING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-BUILDING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.JUDGING) {
+                        } else if (arena.getState() == ArenaState.JUDGING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-JUDGING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
@@ -282,27 +282,27 @@ public class SignManager implements Listener {
 
                         Arena arena = plugin.getMultiWorld().getArenaManager().getArena(e.getLine(1));
                         e.setLine(1, arena.getName());
-                        if (arena.getGameState() == GameState.WAITING) {
+                        if (arena.getState() == ArenaState.WAITING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-WAITING")));
 
                             relativeBlock.setType(Material.LIME_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.STARTING) {
+                        } else if (arena.getState() == ArenaState.STARTING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-STARTING")));
 
                             relativeBlock.setType(Material.ORANGE_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.GAME_STARTING) {
+                        } else if (arena.getState() == ArenaState.BEGINNING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-GAME_STARTING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.SHOWCASING) {
+                        } else if (arena.getState() == ArenaState.DISPLAYING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-SHOWCASING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.BUILDING) {
+                        } else if (arena.getState() == ArenaState.BUILDING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-BUILDING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.JUDGING) {
+                        } else if (arena.getState() == ArenaState.JUDGING) {
                             e.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-JUDGING")));
 
                             relativeBlock.setType(Material.RED_TERRACOTTA);
@@ -357,7 +357,7 @@ public class SignManager implements Listener {
                                     }
 
                                     if (found) {
-                                        if (arena.getGameState() == GameState.WAITING || arena.getGameState() == GameState.STARTING) {
+                                        if (arena.getState() == ArenaState.WAITING || arena.getState() == ArenaState.STARTING) {
                                             if (!(arena.getPlayers().size() >= arena.getMaxPlayers())) {
                                                 foundJoinableArena = true;
                                                 plugin.getMultiWorld().saveTempInfo(player);
@@ -368,29 +368,23 @@ public class SignManager implements Listener {
                                                 plugin.getMultiWorld().saveTempInfo(player);
                                                 plugin.getMultiWorld().getArenaManager().addPlayer(player, arena.getName());
 
-                                                List<Player> noPermUsers = new ArrayList<>();
-                                                for (String arenaPlayer : arena.getPlayers()) {
-                                                    if (Bukkit.getPlayer(arenaPlayer) != player && !Bukkit.getPlayer(arenaPlayer).hasPermission("sb.server.joinfullgame")) {
-                                                        noPermUsers.add(Bukkit.getPlayer(arenaPlayer));
-                                                    }
-                                                }
-
+                                                var noPermUsers = arena.getPlayers().stream().filter(p -> p != player && !p.hasPermission("sb.server.joinfullgame")).toList();
                                                 if (!noPermUsers.isEmpty()) {
                                                     Player kickPlayer = noPermUsers.get(new Random().nextInt(noPermUsers.size()));
                                                     arena.getPlayers().remove(kickPlayer.getName());
 
-                                                    if (arena.getGameState() == GameState.WAITING) {
-                                                        for (String arenaPlayer : arena.getPlayers()) {
-                                                            if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-                                                                Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+                                                    if (arena.getState() == ArenaState.WAITING) {
+                                                        arena.getPlayers().forEach(p -> {
+                                                            if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+                                                                Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
                                                                 Objective objective = scoreboard.getObjective("SpeedBuilders");
                                                                 for (String entry : scoreboard.getEntries()) {
                                                                     scoreboard.resetScores(entry);
                                                                 }
-                                                                if (arena.getGameState() == GameState.WAITING) {
+                                                                if (arena.getState() == ArenaState.WAITING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                                 }
-                                                                if (arena.getGameState() == GameState.STARTING) {
+                                                                if (arena.getState() == ArenaState.STARTING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                                 }
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -398,16 +392,16 @@ public class SignManager implements Listener {
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                                Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                                p.setScoreboard(scoreboard);
                                                             } else {
                                                                 ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
                                                                 Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
                                                                 Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-                                                                if (arena.getGameState() == GameState.WAITING) {
+                                                                if (arena.getState() == ArenaState.WAITING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                                 }
-                                                                if (arena.getGameState() == GameState.STARTING) {
+                                                                if (arena.getState() == ArenaState.STARTING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                                 }
                                                                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -416,11 +410,11 @@ public class SignManager implements Listener {
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                                Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-                                                                arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                                p.setScoreboard(scoreboard);
+                                                                arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
                                                             }
-                                                        }
+                                                        });
 
                                                         arena.getGameScoreboard().getPlayerTeam(kickPlayer).removePlayer(kickPlayer);
                                                         plugin.getMultiWorld().getKitManager().setKit(kickPlayer, null, arena.getName());
@@ -452,18 +446,18 @@ public class SignManager implements Listener {
                                                             plugin.getMultiWorld().loadTempInfo(kickPlayer);
                                                         }
                                                         kickPlayer.updateInventory();
-                                                    } else if (arena.getGameState() == GameState.STARTING) {
-                                                        for (String arenaPlayer : arena.getPlayers()) {
-                                                            if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-                                                                Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+                                                    } else if (arena.getState() == ArenaState.STARTING) {
+                                                        arena.getPlayers().forEach(p -> {
+                                                            if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+                                                                Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
                                                                 Objective objective = scoreboard.getObjective("SpeedBuilders");
                                                                 for (String entry : scoreboard.getEntries()) {
                                                                     scoreboard.resetScores(entry);
                                                                 }
-                                                                if (arena.getGameState() == GameState.WAITING) {
+                                                                if (arena.getState() == ArenaState.WAITING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                                 }
-                                                                if (arena.getGameState() == GameState.STARTING) {
+                                                                if (arena.getState() == ArenaState.STARTING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                                 }
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -471,16 +465,16 @@ public class SignManager implements Listener {
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                                Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                                p.setScoreboard(scoreboard);
                                                             } else {
                                                                 ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
                                                                 Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
                                                                 Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-                                                                if (arena.getGameState() == GameState.WAITING) {
+                                                                if (arena.getState() == ArenaState.WAITING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                                 }
-                                                                if (arena.getGameState() == GameState.STARTING) {
+                                                                if (arena.getState() == ArenaState.STARTING) {
                                                                     objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                                 }
                                                                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -489,11 +483,11 @@ public class SignManager implements Listener {
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                                 objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                                Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-                                                                arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+                                                                objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                                p.setScoreboard(scoreboard);
+                                                                arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
                                                             }
-                                                        }
+                                                        });
 
                                                         arena.getGameScoreboard().getPlayerTeam(kickPlayer).removePlayer(kickPlayer);
                                                         plugin.getMultiWorld().getKitManager().setKit(kickPlayer, null, arena.getName());
@@ -600,7 +594,7 @@ public class SignManager implements Listener {
                                 }
 
                                 if (found) {
-                                    if (arena.getGameState() == GameState.WAITING || arena.getGameState() == GameState.STARTING) {
+                                    if (arena.getState() == ArenaState.WAITING || arena.getState() == ArenaState.STARTING) {
                                         if (!(arena.getPlayers().size() >= arena.getMaxPlayers())) {
                                             plugin.getMultiWorld().saveTempInfo(player);
 
@@ -610,29 +604,23 @@ public class SignManager implements Listener {
                                             plugin.getMultiWorld().saveTempInfo(player);
                                             plugin.getMultiWorld().getArenaManager().addPlayer(player, arena.getName());
 
-                                            List<Player> noPermUsers = new ArrayList<>();
-                                            for (String arenaPlayer : arena.getPlayers()) {
-                                                if (Bukkit.getPlayer(arenaPlayer) != player && !Bukkit.getPlayer(arenaPlayer).hasPermission("sb.server.joinfullgame")) {
-                                                    noPermUsers.add(Bukkit.getPlayer(arenaPlayer));
-                                                }
-                                            }
-
+                                            var noPermUsers = arena.getPlayers().stream().filter(p -> p != player && !p.hasPermission("sb.server.joinfullgame")).toList();
                                             if (!noPermUsers.isEmpty()) {
                                                 Player kickPlayer = noPermUsers.get(new Random().nextInt(noPermUsers.size()));
                                                 arena.getPlayers().remove(kickPlayer.getName());
 
-                                                if (arena.getGameState() == GameState.WAITING) {
-                                                    for (String arenaPlayer : arena.getPlayers()) {
-                                                        if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-                                                            Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+                                                if (arena.getState() == ArenaState.WAITING) {
+                                                    arena.getPlayers().forEach(p -> {
+                                                        if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+                                                            Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
                                                             Objective objective = scoreboard.getObjective("SpeedBuilders");
                                                             for (String entry : scoreboard.getEntries()) {
                                                                 scoreboard.resetScores(entry);
                                                             }
-                                                            if (arena.getGameState() == GameState.WAITING) {
+                                                            if (arena.getState() == ArenaState.WAITING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                             }
-                                                            if (arena.getGameState() == GameState.STARTING) {
+                                                            if (arena.getState() == ArenaState.STARTING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                             }
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -640,16 +628,16 @@ public class SignManager implements Listener {
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                            Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                            p.setScoreboard(scoreboard);
                                                         } else {
                                                             ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
                                                             Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
                                                             Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-                                                            if (arena.getGameState() == GameState.WAITING) {
+                                                            if (arena.getState() == ArenaState.WAITING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                             }
-                                                            if (arena.getGameState() == GameState.STARTING) {
+                                                            if (arena.getState() == ArenaState.STARTING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                             }
                                                             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -658,11 +646,11 @@ public class SignManager implements Listener {
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                            Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-                                                            arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                            p.setScoreboard(scoreboard);
+                                                            arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
                                                         }
-                                                    }
+                                                    });
 
                                                     arena.getGameScoreboard().getPlayerTeam(kickPlayer).removePlayer(kickPlayer);
                                                     plugin.getMultiWorld().getKitManager().setKit(kickPlayer, null, arena.getName());
@@ -694,18 +682,18 @@ public class SignManager implements Listener {
                                                         plugin.getMultiWorld().loadTempInfo(kickPlayer);
                                                     }
                                                     kickPlayer.updateInventory();
-                                                } else if (arena.getGameState() == GameState.STARTING) {
-                                                    for (String arenaPlayer : arena.getPlayers()) {
-                                                        if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-                                                            Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+                                                } else if (arena.getState() == ArenaState.STARTING) {
+                                                    arena.getPlayers().forEach(p -> {
+                                                        if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+                                                            Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
                                                             Objective objective = scoreboard.getObjective("SpeedBuilders");
                                                             for (String entry : scoreboard.getEntries()) {
                                                                 scoreboard.resetScores(entry);
                                                             }
-                                                            if (arena.getGameState() == GameState.WAITING) {
+                                                            if (arena.getState() == ArenaState.WAITING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                             }
-                                                            if (arena.getGameState() == GameState.STARTING) {
+                                                            if (arena.getState() == ArenaState.STARTING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                             }
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -713,16 +701,16 @@ public class SignManager implements Listener {
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                            Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                            p.setScoreboard(scoreboard);
                                                         } else {
                                                             ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
                                                             Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
                                                             Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-                                                            if (arena.getGameState() == GameState.WAITING) {
+                                                            if (arena.getState() == ArenaState.WAITING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
                                                             }
-                                                            if (arena.getGameState() == GameState.STARTING) {
+                                                            if (arena.getState() == ArenaState.STARTING) {
                                                                 objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
                                                             }
                                                             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -731,11 +719,11 @@ public class SignManager implements Listener {
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
                                                             objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-                                                            Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-                                                            arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+                                                            objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+                                                            p.setScoreboard(scoreboard);
+                                                            arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
                                                         }
-                                                    }
+                                                    });
 
                                                     arena.getGameScoreboard().getPlayerTeam(kickPlayer).removePlayer(kickPlayer);
                                                     plugin.getMultiWorld().getKitManager().setKit(kickPlayer, null, arena.getName());
@@ -815,32 +803,32 @@ public class SignManager implements Listener {
 
                         sign.setLine(0, ChatColor.translateAlternateColorCodes('&', translate("PREFIX-SIGN")));
                         sign.setLine(1, arena.getName());
-                        if (arena.getGameState() == GameState.WAITING) {
+                        if (arena.getState() == ArenaState.WAITING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-WAITING")));
 
                             Block relativeBlock = block.getRelative(BlockFace.DOWN);
                             relativeBlock.setType(Material.LIME_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.STARTING) {
+                        } else if (arena.getState() == ArenaState.STARTING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-STARTING")));
 
                             Block relativeBlock = block.getRelative(BlockFace.DOWN);
                             relativeBlock.setType(Material.ORANGE_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.GAME_STARTING) {
+                        } else if (arena.getState() == ArenaState.BEGINNING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-GAME_STARTING")));
 
                             Block relativeBlock = block.getRelative(BlockFace.DOWN);
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.SHOWCASING) {
+                        } else if (arena.getState() == ArenaState.DISPLAYING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-SHOWCASING")));
 
                             Block relativeBlock = block.getRelative(BlockFace.DOWN);
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.BUILDING) {
+                        } else if (arena.getState() == ArenaState.BUILDING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-BUILDING")));
 
                             BlockState relativeBlock = block.getRelative(BlockFace.DOWN).getState();
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.JUDGING) {
+                        } else if (arena.getState() == ArenaState.JUDGING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-JUDGING")));
 
                             Block relativeBlock = block.getRelative(BlockFace.DOWN);
@@ -854,32 +842,32 @@ public class SignManager implements Listener {
 
                         sign.setLine(0, ChatColor.translateAlternateColorCodes('&', translate("PREFIX-SIGN")));
                         sign.setLine(1, arena.getName());
-                        if (arena.getGameState() == GameState.WAITING) {
+                        if (arena.getState() == ArenaState.WAITING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-WAITING")));
 
                             Block relativeBlock = block.getRelative(wallSign.getFacing().getOppositeFace());
                             relativeBlock.setType(Material.LIME_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.STARTING) {
+                        } else if (arena.getState() == ArenaState.STARTING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-STARTING")));
 
                             Block relativeBlock = block.getRelative(wallSign.getFacing().getOppositeFace());
                             relativeBlock.setType(Material.ORANGE_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.GAME_STARTING) {
+                        } else if (arena.getState() == ArenaState.BEGINNING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-GAME_STARTING")));
 
                             Block relativeBlock = block.getRelative(wallSign.getFacing().getOppositeFace());
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.SHOWCASING) {
+                        } else if (arena.getState() == ArenaState.DISPLAYING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-SHOWCASING")));
 
                             Block relativeBlock = block.getRelative(wallSign.getFacing().getOppositeFace());
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.BUILDING) {
+                        } else if (arena.getState() == ArenaState.BUILDING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-BUILDING")));
 
                             Block relativeBlock = block.getRelative(wallSign.getFacing().getOppositeFace());
                             relativeBlock.setType(Material.RED_TERRACOTTA);
-                        } else if (arena.getGameState() == GameState.JUDGING) {
+                        } else if (arena.getState() == ArenaState.JUDGING) {
                             sign.setLine(2, ChatColor.translateAlternateColorCodes('&', translate("GAMESTATE-JUDGING")));
 
                             Block relativeBlock = block.getRelative(wallSign.getFacing().getOppositeFace());

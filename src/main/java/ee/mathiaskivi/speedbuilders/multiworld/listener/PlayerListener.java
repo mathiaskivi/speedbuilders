@@ -2,7 +2,7 @@ package ee.mathiaskivi.speedbuilders.multiworld.listener;
 
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
 import ee.mathiaskivi.speedbuilders.multiworld.Arena;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -96,7 +96,7 @@ public class PlayerListener implements Listener {
 		}
 		Arena arena = tempArena;
 		if (arena != null) {
-			if (arena.getGameState() == GameState.WAITING) {
+			if (arena.getState() == ArenaState.WAITING) {
 				if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 					if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 						e.setCancelled(true);
@@ -120,7 +120,7 @@ public class PlayerListener implements Listener {
 						}
 					}
 				}
-			} else if (arena.getGameState() == GameState.STARTING) {
+			} else if (arena.getState() == ArenaState.STARTING) {
 				if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 					if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 						e.setCancelled(true);
@@ -144,7 +144,7 @@ public class PlayerListener implements Listener {
 						}
 					}
 				}
-			} else if (arena.getGameState() == GameState.SHOWCASING) {
+			} else if (arena.getState() == ArenaState.DISPLAYING) {
 				if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 					if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 						e.setCancelled(true);
@@ -168,7 +168,7 @@ public class PlayerListener implements Listener {
 						}
 					}
 				}
-			} else if (arena.getGameState() == GameState.BUILDING) {
+			} else if (arena.getState() == ArenaState.BUILDING) {
 				if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 					if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 						e.setCancelled(true);
@@ -235,7 +235,7 @@ public class PlayerListener implements Listener {
 						}
 					}
 				}
-			} else if (arena.getGameState() == GameState.JUDGING) {
+			} else if (arena.getState() == ArenaState.JUDGING) {
 				if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 					if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 						e.setCancelled(true);
@@ -274,7 +274,7 @@ public class PlayerListener implements Listener {
 		}
 		Arena arena = tempArena;
 		if (arena != null) {
-			if (arena.getGameState() == GameState.GAME_STARTING) {
+			if (arena.getState() == ArenaState.BEGINNING) {
 				if (arena.getPlots().containsKey(player.getName())) {
 					if (((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()))) {
 						Location location = e.getFrom();
@@ -283,7 +283,7 @@ public class PlayerListener implements Listener {
 						e.setTo(location);
 					}
 				}
-			} else if (arena.getGameState() == GameState.SHOWCASING) {
+			} else if (arena.getState() == ArenaState.DISPLAYING) {
 				if (arena.getPlots().containsKey(player.getName())) {
 					if (!isPlayerInsideAsPlayer(e.getTo(), new Location(player.getWorld(), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.x1"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.y1"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.z1")), new Location(player.getWorld(), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.x2"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.y2"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.z2")))) {
 						String plot = arena.getPlots().get(player.getName());
@@ -297,7 +297,7 @@ public class PlayerListener implements Listener {
 						player.sendTitle("", ChatColor.translateAlternateColorCodes('&', translate("TITLE-YOU_CANNOT_LEAVE")), 0, 2*15, 10);
 					}
 				}
-			} else if (arena.getGameState() == GameState.BUILDING) {
+			} else if (arena.getState() == ArenaState.BUILDING) {
 				if (arena.getPlots().containsKey(player.getName())) {
 					if (!isPlayerInsideAsPlayer(e.getTo(), new Location(player.getWorld(), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.x1"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.y1"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.z1")), new Location(player.getWorld(), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.x2"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.y2"), plugin.getConfigManager().getConfig("arenas.yml").getInt("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".area.z2")))) {
 						String plot = arena.getPlots().get(player.getName());
@@ -383,7 +383,7 @@ public class PlayerListener implements Listener {
 		}
 		Arena arena = tempArena;
 		if (arena != null) {
-			if (arena.getGameState() == GameState.BUILDING) {
+			if (arena.getState() == ArenaState.BUILDING) {
 				if (!arena.getPlayersDoubleJumpCooldowned().containsKey(player.getName())) {
 					if (arena.getPlots().containsKey(player.getName())) {
 						e.setCancelled(true);
@@ -418,7 +418,7 @@ public class PlayerListener implements Listener {
 					player.updateInventory();
 				} else {
 					if (player.hasPermission("sb.command.setup")) {
-						if (arena.getGameState() != GameState.WAITING && arena.getGameState() != GameState.BUILDING) {
+						if (arena.getState() != ArenaState.WAITING && arena.getState() != ArenaState.BUILDING) {
 							e.setCancelled(true);
 							player.updateInventory();
 						} else {
@@ -438,7 +438,7 @@ public class PlayerListener implements Listener {
 							}
 						}
 					} else {
-						if (arena.getGameState() != GameState.BUILDING) {
+						if (arena.getState() != ArenaState.BUILDING) {
 							e.setCancelled(true);
 							player.updateInventory();
 						} else {
@@ -482,7 +482,7 @@ public class PlayerListener implements Listener {
 		if (arena != null) {
 			if (itemStack1 != null) {
 				if (player.hasPermission("sb.command.setup")) {
-					if (arena.getGameState() != GameState.WAITING) {
+					if (arena.getState() != ArenaState.WAITING) {
 						e.setCancelled(true);
 						player.updateInventory();
 					} else {
@@ -538,7 +538,7 @@ public class PlayerListener implements Listener {
 		}
 		Arena arena = tempArena;
 		if (arena != null) {
-			if (arena.getGameState() == GameState.BUILDING) {
+			if (arena.getState() == ArenaState.BUILDING) {
 				Location location1 = e.getBlock().getLocation();
 				Location location2 = new Location(Bukkit.getWorld(arena.getName()), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".build-area.x1"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".build-area.y1"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".build-area.z1"));
 				Location location3 = new Location(Bukkit.getWorld(arena.getName()), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".build-area.x2"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".build-area.y2"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + arena.getPlots().get(player.getName()) + ".build-area.z2"));

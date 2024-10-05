@@ -1,9 +1,8 @@
 package ee.mathiaskivi.speedbuilders.bungeecord.listener;
 
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -18,14 +17,12 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-import static ee.mathiaskivi.speedbuilders.utility.Translations.translate;
-
 public class WorldListener implements Listener {
 	private SpeedBuilders plugin = (SpeedBuilders) Bukkit.getPluginManager().getPlugin("SpeedBuilders");
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockCanBuild(BlockCanBuildEvent e) {
-		if (plugin.getBungeeCord().gameState == GameState.BUILDING) {
+		if (plugin.getBungeeCord().state == ArenaState.BUILDING) {
 			Player player = e.getPlayer();
 			Location location = e.getBlock().getLocation().add(0.5, 1, 0.5);
 
@@ -47,7 +44,7 @@ public class WorldListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onEntityChangeBlock(EntityChangeBlockEvent e) {
-		if (plugin.getBungeeCord().gameState == GameState.GAME_STARTING || plugin.getBungeeCord().gameState == GameState.SHOWCASING || plugin.getBungeeCord().gameState == GameState.BUILDING || plugin.getBungeeCord().gameState == GameState.JUDGING) {
+		if (plugin.getBungeeCord().state == ArenaState.BEGINNING || plugin.getBungeeCord().state == ArenaState.DISPLAYING || plugin.getBungeeCord().state == ArenaState.BUILDING || plugin.getBungeeCord().state == ArenaState.JUDGING) {
 			if (e.getEntityType() == EntityType.FALLING_BLOCK) {
 				e.getEntity().getWorld().playEffect(e.getEntity().getLocation(), Effect.STEP_SOUND, e.getTo());
 				e.getEntity().remove();
@@ -58,7 +55,7 @@ public class WorldListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockPhysics(BlockPhysicsEvent e) {
-		if (plugin.getBungeeCord().gameState == GameState.GAME_STARTING || plugin.getBungeeCord().gameState == GameState.SHOWCASING || plugin.getBungeeCord().gameState == GameState.BUILDING || plugin.getBungeeCord().gameState == GameState.JUDGING) {
+		if (plugin.getBungeeCord().state == ArenaState.BEGINNING || plugin.getBungeeCord().state == ArenaState.DISPLAYING || plugin.getBungeeCord().state == ArenaState.BUILDING || plugin.getBungeeCord().state == ArenaState.JUDGING) {
 			if (e.getChangedType().toString().endsWith("_BARS")
 					|| e.getChangedType().toString().endsWith("_FENCE")
 					|| e.getChangedType().toString().endsWith("_GATE")

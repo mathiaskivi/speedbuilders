@@ -1,9 +1,10 @@
 package ee.mathiaskivi.speedbuilders.multiworld.manager;
 
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
-import ee.mathiaskivi.speedbuilders.api.event.GameStateChangeEvent;
+import ee.mathiaskivi.speedbuilders.api.event.ArenaStateChangeEvent;
 import ee.mathiaskivi.speedbuilders.api.event.PlayerLoseEvent;
 import ee.mathiaskivi.speedbuilders.api.event.PlayerWinEvent;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import ee.mathiaskivi.speedbuilders.multiworld.Arena;
 import ee.mathiaskivi.speedbuilders.utility.*;
 import org.bukkit.*;
@@ -15,6 +16,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static ee.mathiaskivi.speedbuilders.utility.Translations.translate;
 
@@ -33,9 +35,9 @@ public class ArenaManager {
 
 	public void addPlayer(Player player, String arenaName) {
 		Arena arena = getArena(arenaName);
-		arena.getPlayers().add(player.getName());
+		arena.getPlayers().add(player);
 
-		if (arena.getGameState() == GameState.WAITING) {
+		if (arena.getState() == ArenaState.WAITING) {
 			if (plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.world") && plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.x") && plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.y") && plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.z")) {
 				Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("arenas.yml").getString("arenas." + arena.getName() + ".lobby.spawn.world")), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.x"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.y"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.z"));
 				location.setPitch((float) plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.pitch"));
@@ -81,17 +83,17 @@ public class ArenaManager {
 
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_JOIN")).replaceAll("%PLAYER%", player.getName()));
 
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+			arena.getPlayers().forEach(p -> {
+				if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
 					Objective objective = scoreboard.getObjective("SpeedBuilders");
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -99,16 +101,16 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
 				} else {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -117,16 +119,16 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-					arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
+					arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
 				}
-			}
+			});
 
 			if (arena.getPlayers().size() == arena.getNeededPlayers()) {
 				plugin.getMultiWorld().getTimerManager().startTimer(arena.getName());
 			}
-		} else if (arena.getGameState() == GameState.STARTING) {
+		} else if (arena.getState() == ArenaState.STARTING) {
 			if (plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.world") && plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.x") && plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.y") && plugin.getConfigManager().getConfig("arenas.yml").contains("arenas." + arena.getName() + ".lobby.spawn.z")) {
 				Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("arenas.yml").getString("arenas." + arena.getName() + ".lobby.spawn.world")), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.x"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.y"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.z"));
 				location.setPitch((float) plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".lobby.spawn.pitch"));
@@ -172,17 +174,17 @@ public class ArenaManager {
 
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_JOIN")).replaceAll("%PLAYER%", player.getName()));
 
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+			arena.getPlayers().forEach(p -> {
+				if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
 					Objective objective = scoreboard.getObjective("SpeedBuilders");
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -190,16 +192,16 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
 				} else {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -208,11 +210,11 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-					arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
+					arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
 				}
-			}
+			});
 		}
 		plugin.getMultiWorld().getSignManager().updateSigns(arena.getName());
 	}
@@ -221,20 +223,20 @@ public class ArenaManager {
 		Arena arena = getArena(arenaName);
 		arena.getPlayers().remove(player.getName());
 
-		if (arena.getGameState() == GameState.WAITING) {
+		if (arena.getState() == ArenaState.WAITING) {
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+			arena.getPlayers().forEach(p -> {
+				if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
 					Objective objective = scoreboard.getObjective("SpeedBuilders");
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -242,16 +244,16 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
 				} else {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -260,11 +262,11 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-					arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
+					arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
 				}
-			}
+			});
 
 			if (arena.getGameScoreboard().getTeam("Players").hasPlayer(player)) {
 				arena.getGameScoreboard().getTeam("Players").removePlayer(player);
@@ -311,28 +313,28 @@ public class ArenaManager {
 				plugin.getMultiWorld().loadTempInfo(player);
 			}
 			player.updateInventory();
-		} else if (arena.getGameState() == GameState.STARTING) {
+		} else if (arena.getState() == ArenaState.STARTING) {
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			if (arena.getPlayers().size() < arena.getNeededPlayers()) {
 				Bukkit.getScheduler().cancelTask(arena.getStartTimerID());
 
-				arena.setGameState(GameState.WAITING);
+				arena.setState(ArenaState.WAITING);
 
-				Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.WAITING, arena.getPlayers().size()));
+				Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.WAITING, arena.getPlayers()));
 			}
 
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName()) != null) {
-					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(Bukkit.getPlayer(arenaPlayer).getName());
+			arena.getPlayers().forEach(p -> {
+				if (arena.getPlayerStartScoreboard().get(p.getName()) != null) {
+					Scoreboard scoreboard = arena.getPlayerStartScoreboard().get(p.getName());
 					Objective objective = scoreboard.getObjective("SpeedBuilders");
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -340,16 +342,16 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
 				} else {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (arena.getGameState() == GameState.WAITING) {
+					if (arena.getState() == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (arena.getGameState() == GameState.STARTING) {
+					if (arena.getState() == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getMultiWorld().getTimerManager().timeString(arena.getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -358,11 +360,11 @@ public class ArenaManager {
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', arena.getPlayers().size() + "/" + arena.getMaxPlayers()), scoreboard)).setScore(4);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&2"), scoreboard)).setScore(3);
 					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-KIT")), scoreboard)).setScore(2);
-					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(Bukkit.getPlayer(arenaPlayer), arena.getName()).toUpperCase())), scoreboard)).setScore(1);
-					Bukkit.getPlayer(arenaPlayer).setScoreboard(scoreboard);
-					arena.getPlayerStartScoreboard().put(Bukkit.getPlayer(arenaPlayer).getName(), scoreboard);
+					objective.getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("KITS-" + plugin.getMultiWorld().getKitManager().getKit(p, arena.getName()).toUpperCase())), scoreboard)).setScore(1);
+					p.setScoreboard(scoreboard);
+					arena.getPlayerStartScoreboard().put(p.getName(), scoreboard);
 				}
-			}
+			});
 
 			if (arena.getGameScoreboard().getTeam("Players").hasPlayer(player)) {
 				arena.getGameScoreboard().getTeam("Players").removePlayer(player);
@@ -409,7 +411,7 @@ public class ArenaManager {
 				plugin.getMultiWorld().loadTempInfo(player);
 			}
 			player.updateInventory();
-		} else if (arena.getGameState() == GameState.GAME_STARTING) {
+		} else if (arena.getState() == ArenaState.BEGINNING) {
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = arena.getPlots().get(player.getName());
@@ -437,28 +439,28 @@ public class ArenaManager {
 					arena.setSecondPlace(player.getName());
 					arena.setFirstPlace((String) arena.getPlots().keySet().toArray()[0]);
 
-					for (final String arenaPlayer : arena.getPlayers()) {
+					arena.getPlayers().forEach(p -> {
 						for (String string : plugin.getConfigManager().getConfig("messages.yml").getStringList("MULTIWORLD.MAIN-GAME_END_DESCRIPTION")) {
-							Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
+							p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
 						}
 
-						Bukkit.getPlayer(arenaPlayer).sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
+						p.sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
 
-						Bukkit.getPlayer(arenaPlayer).playSound(Bukkit.getPlayer(arenaPlayer).getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-						if (Bukkit.getPlayer(arenaPlayer).getName().equals(arena.getFirstPlace())) {
+						p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+						if (p.getName().equals(arena.getFirstPlace())) {
 							new BukkitRunnable() {
 								public void run() {
 									for (String winnerCommand : plugin.getMultiWorld().winnerCommands) {
-										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", Bukkit.getPlayer(arenaPlayer).getName()));
+										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", p.getName()));
 									}
 
-									plugin.getStatsManager().incrementStat(StatsType.WINS, Bukkit.getPlayer(arenaPlayer), 1);
+									plugin.getStatsManager().incrementStat(StatsType.WINS, p, 1);
 
-									Bukkit.getPluginManager().callEvent(new PlayerWinEvent(Bukkit.getPlayer(arenaPlayer)));
+									Bukkit.getPluginManager().callEvent(new PlayerWinEvent(p));
 								}
 							}.runTaskLater(plugin, 5L);
 						}
-					}
+					});
 
 					plugin.getMultiWorld().getTemplateManager().explodePlot(plot, arena.getName());
 
@@ -495,48 +497,47 @@ public class ArenaManager {
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "" + arena.getCurrentRound()), arena.getGameScoreboard())).setScore(10);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&3"), arena.getGameScoreboard())).setScore(9);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-PLAYERS")), arena.getGameScoreboard())).setScore(8);
-			int score = 7;
+			AtomicInteger score = new AtomicInteger(7);
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[0]), arena.getGameScoreboard())).setScore(7);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[1]), arena.getGameScoreboard())).setScore(6);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[2]), arena.getGameScoreboard())).setScore(5);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[3]), arena.getGameScoreboard())).setScore(4);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[4]), arena.getGameScoreboard())).setScore(3);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[5]), arena.getGameScoreboard())).setScore(2);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[6]), arena.getGameScoreboard())).setScore(1);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (Bukkit.getPlayer(arenaPlayer) != player) {
-					if (score >= 0) {
-						if (!arena.getPlots().containsKey(Bukkit.getPlayer(arenaPlayer).getName())) {
-							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + Bukkit.getPlayer(arenaPlayer).getName()), arena.getGameScoreboard())).setScore(score);
-							score--;
+			arena.getPlayers().forEach(p -> {
+				if (p != player) {
+					if (score.get() >= 0) {
+						if (!arena.getPlots().containsKey(p.getName())) {
+							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + p.getName()), arena.getGameScoreboard())).setScore(score.get());
+							score.getAndDecrement();
 						}
 					}
 				}
-			}
-			for (String arenaPlayer : arena.getPlayers()) {
-				Bukkit.getPlayer(arenaPlayer).setScoreboard(arena.getGameScoreboard());
-			}
+
+				p.setScoreboard(arena.getGameScoreboard());
+			});
 
 			if (arena.getGameScoreboard().getTeam("Players").hasPlayer(player)) {
 				arena.getGameScoreboard().getTeam("Players").removePlayer(player);
@@ -583,7 +584,7 @@ public class ArenaManager {
 				plugin.getMultiWorld().loadTempInfo(player);
 			}
 			player.updateInventory();
-		} else if (arena.getGameState() == GameState.SHOWCASING) {
+		} else if (arena.getState() == ArenaState.DISPLAYING) {
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = arena.getPlots().get(player.getName());
@@ -611,28 +612,28 @@ public class ArenaManager {
 					arena.setSecondPlace(player.getName());
 					arena.setFirstPlace((String) arena.getPlots().keySet().toArray()[0]);
 
-					for (String arenaPlayer : arena.getPlayers()) {
+					arena.getPlayers().forEach(p -> {
 						for (String string : plugin.getConfigManager().getConfig("messages.yml").getStringList("MULTIWORLD.MAIN-GAME_END_DESCRIPTION")) {
-							Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
+							p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
 						}
 
-						Bukkit.getPlayer(arenaPlayer).sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
+						p.sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
 
-						Bukkit.getPlayer(arenaPlayer).playSound(Bukkit.getPlayer(arenaPlayer).getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-						if (Bukkit.getPlayer(arenaPlayer).getName().equals(arena.getFirstPlace())) {
+						p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+						if (p.getName().equals(arena.getFirstPlace())) {
 							new BukkitRunnable() {
 								public void run() {
 									for (String winnerCommand : plugin.getMultiWorld().winnerCommands) {
-										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", Bukkit.getPlayer(arenaPlayer).getName()));
+										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", p.getName()));
 									}
 
-									plugin.getStatsManager().incrementStat(StatsType.WINS, Bukkit.getPlayer(arenaPlayer), 1);
+									plugin.getStatsManager().incrementStat(StatsType.WINS, p, 1);
 
-									Bukkit.getPluginManager().callEvent(new PlayerWinEvent(Bukkit.getPlayer(arenaPlayer)));
+									Bukkit.getPluginManager().callEvent(new PlayerWinEvent(p));
 								}
 							}.runTaskLater(plugin, 5L);
 						}
-					}
+					});
 
 					plugin.getMultiWorld().getTemplateManager().explodePlot(plot, arena.getName());
 
@@ -669,48 +670,47 @@ public class ArenaManager {
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "" + arena.getCurrentRound()), arena.getGameScoreboard())).setScore(10);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&3"), arena.getGameScoreboard())).setScore(9);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-PLAYERS")), arena.getGameScoreboard())).setScore(8);
-			int score = 7;
+			AtomicInteger score = new AtomicInteger(7);
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[0]), arena.getGameScoreboard())).setScore(7);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[1]), arena.getGameScoreboard())).setScore(6);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[2]), arena.getGameScoreboard())).setScore(5);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[3]), arena.getGameScoreboard())).setScore(4);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[4]), arena.getGameScoreboard())).setScore(3);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[5]), arena.getGameScoreboard())).setScore(2);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[6]), arena.getGameScoreboard())).setScore(1);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (Bukkit.getPlayer(arenaPlayer) != player) {
-					if (score >= 0) {
-						if (!arena.getPlots().containsKey(Bukkit.getPlayer(arenaPlayer).getName())) {
-							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + Bukkit.getPlayer(arenaPlayer).getName()), arena.getGameScoreboard())).setScore(score);
-							score--;
+			arena.getPlayers().forEach(p -> {
+				if (p != player) {
+					if (score.get() >= 0) {
+						if (!arena.getPlots().containsKey(p.getName())) {
+							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + p.getName()), arena.getGameScoreboard())).setScore(score.get());
+							score.getAndDecrement();
 						}
 					}
 				}
-			}
-			for (String arenaPlayer : arena.getPlayers()) {
-				Bukkit.getPlayer(arenaPlayer).setScoreboard(arena.getGameScoreboard());
-			}
+
+				p.setScoreboard(arena.getGameScoreboard());
+			});
 
 			if (arena.getGameScoreboard().getTeam("Players").hasPlayer(player)) {
 				arena.getGameScoreboard().getTeam("Players").removePlayer(player);
@@ -757,7 +757,7 @@ public class ArenaManager {
 				plugin.getMultiWorld().loadTempInfo(player);
 			}
 			player.updateInventory();
-		} else if (arena.getGameState() == GameState.BUILDING) {
+		} else if (arena.getState() == ArenaState.BUILDING) {
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = arena.getPlots().get(player.getName());
@@ -785,28 +785,28 @@ public class ArenaManager {
 					arena.setSecondPlace(player.getName());
 					arena.setFirstPlace((String) arena.getPlots().keySet().toArray()[0]);
 
-					for (final String arenaPlayer : arena.getPlayers()) {
+					arena.getPlayers().forEach(p -> {
 						for (String string : plugin.getConfigManager().getConfig("messages.yml").getStringList("MULTIWORLD.MAIN-GAME_END_DESCRIPTION")) {
-							Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
+							p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
 						}
 
-						Bukkit.getPlayer(arenaPlayer).sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
+						p.sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
 
-						Bukkit.getPlayer(arenaPlayer).playSound(Bukkit.getPlayer(arenaPlayer).getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-						if (Bukkit.getPlayer(arenaPlayer).getName().equals(arena.getFirstPlace())) {
+						p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+						if (p.getName().equals(arena.getFirstPlace())) {
 							new BukkitRunnable() {
 								public void run() {
 									for (String winnerCommand : plugin.getMultiWorld().winnerCommands) {
-										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", Bukkit.getPlayer(arenaPlayer).getName()));
+										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", p.getName()));
 									}
 
-									plugin.getStatsManager().incrementStat(StatsType.WINS, Bukkit.getPlayer(arenaPlayer), 1);
+									plugin.getStatsManager().incrementStat(StatsType.WINS, p, 1);
 
-									Bukkit.getPluginManager().callEvent(new PlayerWinEvent(Bukkit.getPlayer(arenaPlayer)));
+									Bukkit.getPluginManager().callEvent(new PlayerWinEvent(p));
 								}
 							}.runTaskLater(plugin, 5L);
 						}
-					}
+					});
 
 					plugin.getMultiWorld().getTemplateManager().explodePlot(plot, arena.getName());
 
@@ -847,48 +847,47 @@ public class ArenaManager {
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "" + arena.getCurrentRound()), arena.getGameScoreboard())).setScore(10);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&3"), arena.getGameScoreboard())).setScore(9);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-PLAYERS")), arena.getGameScoreboard())).setScore(8);
-			int score = 7;
+			AtomicInteger score = new AtomicInteger(7);
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[0]), arena.getGameScoreboard())).setScore(7);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[1]), arena.getGameScoreboard())).setScore(6);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[2]), arena.getGameScoreboard())).setScore(5);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[3]), arena.getGameScoreboard())).setScore(4);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[4]), arena.getGameScoreboard())).setScore(3);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[5]), arena.getGameScoreboard())).setScore(2);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[6]), arena.getGameScoreboard())).setScore(1);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (Bukkit.getPlayer(arenaPlayer) != player) {
-					if (score >= 0) {
-						if (!arena.getPlots().containsKey(Bukkit.getPlayer(arenaPlayer).getName())) {
-							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + Bukkit.getPlayer(arenaPlayer).getName()), arena.getGameScoreboard())).setScore(score);
-							score--;
+			arena.getPlayers().forEach(p -> {
+				if (p != player) {
+					if (score.get() >= 0) {
+						if (!arena.getPlots().containsKey(p.getName())) {
+							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + p.getName()), arena.getGameScoreboard())).setScore(score.get());
+							score.getAndDecrement();
 						}
 					}
 				}
-			}
-			for (String arenaPlayer : arena.getPlayers()) {
-				Bukkit.getPlayer(arenaPlayer).setScoreboard(arena.getGameScoreboard());
-			}
+
+				p.setScoreboard(arena.getGameScoreboard());
+			});
 
 			if (arena.getGameScoreboard().getTeam("Players").hasPlayer(player)) {
 				arena.getGameScoreboard().getTeam("Players").removePlayer(player);
@@ -935,7 +934,7 @@ public class ArenaManager {
 				plugin.getMultiWorld().loadTempInfo(player);
 			}
 			player.updateInventory();
-		} else if (arena.getGameState() == GameState.JUDGING) {
+		} else if (arena.getState() == ArenaState.JUDGING) {
 			arena.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = arena.getPlots().get(player.getName());
@@ -964,28 +963,28 @@ public class ArenaManager {
 						arena.setSecondPlace(player.getName());
 						arena.setFirstPlace((String) arena.getPlots().keySet().toArray()[0]);
 
-						for (final String arenaPlayer : arena.getPlayers()) {
+						arena.getPlayers().forEach(p -> {
 							for (String string : plugin.getConfigManager().getConfig("messages.yml").getStringList("MULTIWORLD.MAIN-GAME_END_DESCRIPTION")) {
-								Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
+								p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
 							}
 
-							Bukkit.getPlayer(arenaPlayer).sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
+							p.sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
 
-							Bukkit.getPlayer(arenaPlayer).playSound(Bukkit.getPlayer(arenaPlayer).getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-							if (Bukkit.getPlayer(arenaPlayer).getName().equals(arena.getFirstPlace())) {
+							p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+							if (p.getName().equals(arena.getFirstPlace())) {
 								new BukkitRunnable() {
 									public void run() {
 										for (String winnerCommand : plugin.getMultiWorld().winnerCommands) {
-											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", Bukkit.getPlayer(arenaPlayer).getName()));
+											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", p.getName()));
 										}
 
-										plugin.getStatsManager().incrementStat(StatsType.WINS, Bukkit.getPlayer(arenaPlayer), 1);
+										plugin.getStatsManager().incrementStat(StatsType.WINS, p, 1);
 
-										Bukkit.getPluginManager().callEvent(new PlayerWinEvent(Bukkit.getPlayer(arenaPlayer)));
+										Bukkit.getPluginManager().callEvent(new PlayerWinEvent(p));
 									}
 								}.runTaskLater(plugin, 5L);
 							}
-						}
+						});
 
 						plugin.getMultiWorld().getTemplateManager().explodePlot(plot, arena.getName());
 
@@ -1013,34 +1012,34 @@ public class ArenaManager {
 
 						new BukkitRunnable() {
 							public void run() {
-								for (String arenaPlayer : arena.getPlayers()) {
-									if (arena.getPlots().containsKey(Bukkit.getPlayer(arenaPlayer).getName())) {
-										Bukkit.getPlayer(arenaPlayer).getInventory().setArmorContents(null);
-										Bukkit.getPlayer(arenaPlayer).getInventory().clear();
-										Bukkit.getPlayer(arenaPlayer).setExp(0);
-										Bukkit.getPlayer(arenaPlayer).setFireTicks(0);
-										Bukkit.getPlayer(arenaPlayer).setFoodLevel(20);
-										Bukkit.getPlayer(arenaPlayer).setGameMode(GameMode.SURVIVAL);
-										Bukkit.getPlayer(arenaPlayer).setHealth(20);
-										Bukkit.getPlayer(arenaPlayer).setLevel(0);
-										Bukkit.getPlayer(arenaPlayer).setAllowFlight(false);
-										Bukkit.getPlayer(arenaPlayer).setFlying(false);
-										for (PotionEffect potionEffect : Bukkit.getPlayer(arenaPlayer).getActivePotionEffects()) {
-											Bukkit.getPlayer(arenaPlayer).removePotionEffect(potionEffect.getType());
+								arena.getPlayers().forEach(p -> {
+									if (arena.getPlots().containsKey(p.getName())) {
+										p.getInventory().setArmorContents(null);
+										p.getInventory().clear();
+										p.setExp(0);
+										p.setFireTicks(0);
+										p.setFoodLevel(20);
+										p.setGameMode(GameMode.SURVIVAL);
+										p.setHealth(20);
+										p.setLevel(0);
+										p.setAllowFlight(false);
+										p.setFlying(false);
+										for (PotionEffect potionEffect : p.getActivePotionEffects()) {
+											p.removePotionEffect(potionEffect.getType());
 										}
 
-										if (arena.getGameScoreboard().getPlayerTeam(Bukkit.getPlayer(arenaPlayer)) != null) {
-											if (arena.getGameScoreboard().getPlayerTeam(Bukkit.getPlayer(arenaPlayer)).getName().equals("Players")) {
-												String plot = arena.getPlots().get(Bukkit.getPlayer(arenaPlayer).getName());
+										if (arena.getGameScoreboard().getPlayerTeam(p) != null) {
+											if (arena.getGameScoreboard().getPlayerTeam(p).getName().equals("Players")) {
+												String plot = arena.getPlots().get(p.getName());
 												Location location = new Location(Bukkit.getWorld(arena.getName()), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + plot + ".spawnpoint.x"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + plot + ".spawnpoint.y"), plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + plot + ".spawnpoint.z"));
 												location.setPitch((float) plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + plot + ".spawnpoint.pitch"));
 												location.setYaw((float) plugin.getConfigManager().getConfig("arenas.yml").getDouble("arenas." + arena.getName() + ".plots." + plot + ".spawnpoint.yaw"));
-												Bukkit.getPlayer(arenaPlayer).teleport(location);
-												Bukkit.getPlayer(arenaPlayer).setFallDistance(0F);
+												p.teleport(location);
+												p.setFallDistance(0F);
 											}
 										}
 									}
-								}
+								});
 
 								plugin.getMultiWorld().getTimerManager().showCaseTimer(arena.getName());
 							}
@@ -1061,28 +1060,28 @@ public class ArenaManager {
 						arena.setSecondPlace((String) arena.getPlots().keySet().toArray()[0]);
 						arena.setFirstPlace(player.getName());
 
-						for (final String arenaPlayer : arena.getPlayers()) {
+						arena.getPlayers().forEach(p -> {
 							for (String string : plugin.getConfigManager().getConfig("messages.yml").getStringList("MULTIWORLD.MAIN-GAME_END_DESCRIPTION")) {
-								Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
+								p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + string.replaceAll("%PLAYER1%", arena.getFirstPlace()).replaceAll("%PLAYER2%", arena.getSecondPlace()).replaceAll("%PLAYER3%", arena.getThirdPlace())));
 							}
 
-							Bukkit.getPlayer(arenaPlayer).sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
+							p.sendTitle(ChatColor.translateAlternateColorCodes('&', "&e" + arena.getFirstPlace()), ChatColor.translateAlternateColorCodes('&', "&e" + translate("TITLE-WON_THE_GAME")), 0, 7*20, 20);
 
-							Bukkit.getPlayer(arenaPlayer).playSound(Bukkit.getPlayer(arenaPlayer).getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-							if (Bukkit.getPlayer(arenaPlayer).getName().equals(arena.getFirstPlace())) {
+							p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+							if (p.getName().equals(arena.getFirstPlace())) {
 								new BukkitRunnable() {
 									public void run() {
 										for (String winnerCommand : plugin.getMultiWorld().winnerCommands) {
-											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", Bukkit.getPlayer(arenaPlayer).getName()));
+											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), winnerCommand.replaceFirst("/", "").replaceAll("%PLAYER%", p.getName()));
 										}
 
-										plugin.getStatsManager().incrementStat(StatsType.WINS, Bukkit.getPlayer(arenaPlayer), 1);
+										plugin.getStatsManager().incrementStat(StatsType.WINS, p, 1);
 
-										Bukkit.getPluginManager().callEvent(new PlayerWinEvent(Bukkit.getPlayer(arenaPlayer)));
+										Bukkit.getPluginManager().callEvent(new PlayerWinEvent(p));
 									}
 								}.runTaskLater(plugin, 5L);
 							}
-						}
+						});
 
 						plugin.getMultiWorld().getTemplateManager().explodePlot(plot, arena.getName());
 
@@ -1112,48 +1111,47 @@ public class ArenaManager {
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "" + arena.getCurrentRound()), arena.getGameScoreboard())).setScore(10);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&3"), arena.getGameScoreboard())).setScore(9);
 			arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-PLAYERS")), arena.getGameScoreboard())).setScore(8);
-			int score = 7;
+			AtomicInteger score = new AtomicInteger(7);
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[0]), arena.getGameScoreboard())).setScore(7);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[1]), arena.getGameScoreboard())).setScore(6);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[2]), arena.getGameScoreboard())).setScore(5);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[3]), arena.getGameScoreboard())).setScore(4);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[4]), arena.getGameScoreboard())).setScore(3);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[5]), arena.getGameScoreboard())).setScore(2);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
 			try {
 				arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&f" + (String) arena.getPlots().keySet().toArray()[6]), arena.getGameScoreboard())).setScore(1);
-				score--;
+				score.getAndDecrement();
 			} catch (ArrayIndexOutOfBoundsException ex) {}
-			for (String arenaPlayer : arena.getPlayers()) {
-				if (Bukkit.getPlayer(arenaPlayer) != player) {
-					if (score >= 0) {
-						if (!arena.getPlots().containsKey(Bukkit.getPlayer(arenaPlayer).getName())) {
-							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + Bukkit.getPlayer(arenaPlayer).getName()), arena.getGameScoreboard())).setScore(score);
-							score--;
+			arena.getPlayers().forEach(p -> {
+				if (p != player) {
+					if (score.get() >= 0) {
+						if (!arena.getPlots().containsKey(p.getName())) {
+							arena.getGameScoreboard().getObjective("SpeedBuilders").getScore(plugin.getMultiWorld().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&8" + p.getName()), arena.getGameScoreboard())).setScore(score.get());
+							score.getAndDecrement();
 						}
 					}
 				}
-			}
-			for (String arenaPlayer : arena.getPlayers()) {
-				Bukkit.getPlayer(arenaPlayer).setScoreboard(arena.getGameScoreboard());
-			}
+
+				p.setScoreboard(arena.getGameScoreboard());
+			});
 
 			if (arena.getGameScoreboard().getTeam("Players").hasPlayer(player)) {
 				arena.getGameScoreboard().getTeam("Players").removePlayer(player);
@@ -1209,55 +1207,55 @@ public class ArenaManager {
 		Arena arena = getArena(arenaName);
 
 		if (arena != null) {
-			for (String arenaPlayer : arena.getPlayers()) {
-				plugin.getMultiWorld().getNMSManager().setPlayerVisibility(Bukkit.getPlayer(arenaPlayer), null, true);
+			arena.getPlayers().forEach(p -> {
+				plugin.getMultiWorld().getNMSManager().setPlayerVisibility(p, null, true);
 
-				if (arena.getGameScoreboard().getTeam("Players").hasPlayer(Bukkit.getPlayer(arenaPlayer))) {
-					arena.getGameScoreboard().getTeam("Players").removePlayer(Bukkit.getPlayer(arenaPlayer));
-					plugin.getMultiWorld().getKitManager().setKit(Bukkit.getPlayer(arenaPlayer), null, arena.getName());
-
-					if (plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.world") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.x") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.y") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.z")) {
-						Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("lobby.yml").getString("lobby.spawn.world")), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.x"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.y"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.z"));
-						location.setPitch((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.pitch"));
-						location.setYaw((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.yaw"));
-						Bukkit.getPlayer(arenaPlayer).teleport(location);
-					} else {
-						Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("ERROR-NO_LOBBY_SPAWNPOINT")));
-					}
-				} else if (arena.getGameScoreboard().getTeam("Guardians").hasPlayer(Bukkit.getPlayer(arenaPlayer))) {
-					arena.getGameScoreboard().getTeam("Guardians").removePlayer(Bukkit.getPlayer(arenaPlayer));
-					plugin.getMultiWorld().getKitManager().setKit(Bukkit.getPlayer(arenaPlayer), null, arena.getName());
+				if (arena.getGameScoreboard().getTeam("Players").hasPlayer(p)) {
+					arena.getGameScoreboard().getTeam("Players").removePlayer(p);
+					plugin.getMultiWorld().getKitManager().setKit(p, null, arena.getName());
 
 					if (plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.world") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.x") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.y") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.z")) {
 						Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("lobby.yml").getString("lobby.spawn.world")), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.x"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.y"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.z"));
 						location.setPitch((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.pitch"));
 						location.setYaw((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.yaw"));
-						Bukkit.getPlayer(arenaPlayer).teleport(location);
+						p.teleport(location);
 					} else {
-						Bukkit.getPlayer(arenaPlayer).sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("ERROR-NO_LOBBY_SPAWNPOINT")));
+						p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("ERROR-NO_LOBBY_SPAWNPOINT")));
+					}
+				} else if (arena.getGameScoreboard().getTeam("Guardians").hasPlayer(p)) {
+					arena.getGameScoreboard().getTeam("Guardians").removePlayer(p);
+					plugin.getMultiWorld().getKitManager().setKit(p, null, arena.getName());
+
+					if (plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.world") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.x") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.y") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.z")) {
+						Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("lobby.yml").getString("lobby.spawn.world")), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.x"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.y"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.z"));
+						location.setPitch((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.pitch"));
+						location.setYaw((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.yaw"));
+						p.teleport(location);
+					} else {
+						p.sendMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("ERROR-NO_LOBBY_SPAWNPOINT")));
 					}
 				}
 
-				Bukkit.getPlayer(arenaPlayer).getInventory().setArmorContents(null);
-				Bukkit.getPlayer(arenaPlayer).getInventory().clear();
-				Bukkit.getPlayer(arenaPlayer).setExp(0);
-				Bukkit.getPlayer(arenaPlayer).setFireTicks(0);
-				Bukkit.getPlayer(arenaPlayer).setFoodLevel(20);
-				Bukkit.getPlayer(arenaPlayer).setGameMode(GameMode.valueOf(plugin.getConfigManager().getConfig("config.yml").getString("gamemode").toUpperCase()));
-				Bukkit.getPlayer(arenaPlayer).setHealth(20);
-				Bukkit.getPlayer(arenaPlayer).setLevel(0);
-				Bukkit.getPlayer(arenaPlayer).setAllowFlight(false);
-				Bukkit.getPlayer(arenaPlayer).setFlying(false);
-				Bukkit.getPlayer(arenaPlayer).setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
-				for (PotionEffect potionEffect : Bukkit.getPlayer(arenaPlayer).getActivePotionEffects()) {
-					Bukkit.getPlayer(arenaPlayer).removePotionEffect(potionEffect.getType());
+				p.getInventory().setArmorContents(null);
+				p.getInventory().clear();
+				p.setExp(0);
+				p.setFireTicks(0);
+				p.setFoodLevel(20);
+				p.setGameMode(GameMode.valueOf(plugin.getConfigManager().getConfig("config.yml").getString("gamemode").toUpperCase()));
+				p.setHealth(20);
+				p.setLevel(0);
+				p.setAllowFlight(false);
+				p.setFlying(false);
+				p.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+				for (PotionEffect potionEffect : p.getActivePotionEffects()) {
+					p.removePotionEffect(potionEffect.getType());
 				}
 
-				if (plugin.getMultiWorld().playerTempHealth.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempFoodLevel.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempExp.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempLevel.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempGameMode.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempArmor.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempItems.containsKey(Bukkit.getPlayer(arenaPlayer).getName()) && plugin.getMultiWorld().playerTempEffects.containsKey(Bukkit.getPlayer(arenaPlayer).getName())) {
-					plugin.getMultiWorld().loadTempInfo(Bukkit.getPlayer(arenaPlayer));
+				if (plugin.getMultiWorld().playerTempHealth.containsKey(p.getName()) && plugin.getMultiWorld().playerTempFoodLevel.containsKey(p.getName()) && plugin.getMultiWorld().playerTempExp.containsKey(p.getName()) && plugin.getMultiWorld().playerTempLevel.containsKey(p.getName()) && plugin.getMultiWorld().playerTempGameMode.containsKey(p.getName()) && plugin.getMultiWorld().playerTempArmor.containsKey(p.getName()) && plugin.getMultiWorld().playerTempItems.containsKey(p.getName()) && plugin.getMultiWorld().playerTempEffects.containsKey(p.getName())) {
+					plugin.getMultiWorld().loadTempInfo(p);
 				}
-				Bukkit.getPlayer(arenaPlayer).updateInventory();
-			}
+				p.updateInventory();
+			});
 
 			Bukkit.getScheduler().cancelTask(arena.getStartTimerID());
 			Bukkit.getScheduler().cancelTask(arena.getGameStartTimerID());
@@ -1302,9 +1300,9 @@ public class ArenaManager {
 			arena.setFirstPlace(translate("MAIN-NONE"));
 			arena.setSecondPlace(translate("MAIN-NONE"));
 			arena.setThirdPlace(translate("MAIN-NONE"));
-			arena.setGameState(GameState.WAITING);
+			arena.setState(ArenaState.WAITING);
 
-			Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.WAITING, arena.getPlayers().size()));
+			Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.WAITING, arena.getPlayers()));
 
 			plugin.getMultiWorld().getSignManager().updateSigns(arena.getName());
 		}
@@ -1354,9 +1352,9 @@ public class ArenaManager {
 						arena.setFirstPlace(translate("MAIN-NONE"));
 						arena.setSecondPlace(translate("MAIN-NONE"));
 						arena.setThirdPlace(translate("MAIN-NONE"));
-						arena.setGameState(GameState.WAITING);
+						arena.setState(ArenaState.WAITING);
 
-						Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.WAITING, arena.getPlayers().size()));
+						Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.WAITING, arena.getPlayers()));
 
 						ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 						arena.gameScoreboard = scoreboardManager.getNewScoreboard();

@@ -2,11 +2,11 @@ package ee.mathiaskivi.speedbuilders.bungeecord;
 
 import com.google.common.base.Splitter;
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
-import ee.mathiaskivi.speedbuilders.api.event.GameStateChangeEvent;
+import ee.mathiaskivi.speedbuilders.api.event.ArenaStateChangeEvent;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import ee.mathiaskivi.speedbuilders.bungeecord.command.SBCommand;
 import ee.mathiaskivi.speedbuilders.bungeecord.listener.*;
 import ee.mathiaskivi.speedbuilders.bungeecord.manager.*;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
 import ee.mathiaskivi.speedbuilders.utility.Translations;
 import ee.mathiaskivi.speedbuilders.utility.VoidGenerator;
 import org.bukkit.*;
@@ -58,7 +58,7 @@ public class BungeeCord {
 	public String firstPlace = null;
 	public String secondPlace = null;
 	public String thirdPlace = null;
-	public GameState gameState;
+	public ArenaState state;
 
 	public HashMap<String, String> setup = new HashMap<>();
 	public Location location1 = null;
@@ -148,9 +148,9 @@ public class BungeeCord {
 		firstPlace = translate("MAIN-NONE");
 		secondPlace = translate("MAIN-NONE");
 		thirdPlace = translate("MAIN-NONE");
-		gameState = GameState.WAITING;
+		state = ArenaState.WAITING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.WAITING, Bukkit.getOnlinePlayers().size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.WAITING, Bukkit.getOnlinePlayers()));
 
 		if (plugin.getConfigManager().getConfig("config.yml").getBoolean("winner-commands.enabled")) {
 			winnerCommands = plugin.getConfigManager().getConfig("config.yml").getStringList("winner-commands.commands");
@@ -234,10 +234,10 @@ public class BungeeCord {
 							for (String entry : scoreboard.getEntries()) {
 								scoreboard.resetScores(entry);
 							}
-							if (gameState == GameState.WAITING) {
+							if (state == ArenaState.WAITING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 							}
-							if (gameState == GameState.STARTING) {
+							if (state == ArenaState.STARTING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", timerManager.timeString(timerManager.getStartTime()))));
 							}
 							objective.getScore(scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -251,10 +251,10 @@ public class BungeeCord {
 							ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 							Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 							Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-							if (gameState == GameState.WAITING) {
+							if (state == ArenaState.WAITING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 							}
-							if (gameState == GameState.STARTING) {
+							if (state == ArenaState.STARTING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", timerManager.timeString(timerManager.getStartTime()))));
 							}
 							objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -351,9 +351,9 @@ public class BungeeCord {
 		firstPlace = translate("MAIN-NONE");
 		secondPlace = translate("MAIN-NONE");
 		thirdPlace = translate("MAIN-NONE");
-		gameState = GameState.WAITING;
+		state = ArenaState.WAITING;
 
-		Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.WAITING, Bukkit.getOnlinePlayers().size()));
+		Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.WAITING, Bukkit.getOnlinePlayers()));
 
 		try {
 			for (String plotName : plugin.getConfigManager().getConfig("maps.yml").getConfigurationSection("maps." + currentMap + ".plots").getKeys(false)) {
@@ -432,10 +432,10 @@ public class BungeeCord {
 							for (String entry : scoreboard.getEntries()) {
 								scoreboard.resetScores(entry);
 							}
-							if (gameState == GameState.WAITING) {
+							if (state == ArenaState.WAITING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 							}
-							if (gameState == GameState.STARTING) {
+							if (state == ArenaState.STARTING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", timerManager.timeString(timerManager.getStartTime()))));
 							}
 							objective.getScore(scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -449,10 +449,10 @@ public class BungeeCord {
 							ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 							Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 							Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-							if (gameState == GameState.WAITING) {
+							if (state == ArenaState.WAITING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 							}
-							if (gameState == GameState.STARTING) {
+							if (state == ArenaState.STARTING) {
 								objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", timerManager.timeString(timerManager.getStartTime()))));
 							}
 							objective.setDisplaySlot(DisplaySlot.SIDEBAR);

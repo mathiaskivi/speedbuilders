@@ -3,10 +3,10 @@ package ee.mathiaskivi.speedbuilders.bungeecord.listener;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
-import ee.mathiaskivi.speedbuilders.api.event.GameStateChangeEvent;
+import ee.mathiaskivi.speedbuilders.api.event.ArenaStateChangeEvent;
 import ee.mathiaskivi.speedbuilders.api.event.PlayerLoseEvent;
 import ee.mathiaskivi.speedbuilders.api.event.PlayerWinEvent;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import ee.mathiaskivi.speedbuilders.utility.StatsType;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -49,7 +49,7 @@ public class PlayerListener implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		Player player = e.getPlayer();
 
-		if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+		if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 			if (plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.world") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.x") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.y") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.z")) {
 				Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("lobby.yml").getString("lobby.spawn.world")), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.x"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.y"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.z"));
 				location.setPitch((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.pitch"));
@@ -101,10 +101,10 @@ public class PlayerListener implements Listener {
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.getScore(plugin.getBungeeCord().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -118,10 +118,10 @@ public class PlayerListener implements Listener {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -140,7 +140,7 @@ public class PlayerListener implements Listener {
 			if (Bukkit.getOnlinePlayers().size() == neededPlayers) {
 				plugin.getBungeeCord().getTimerManager().startTimer();
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 			if (plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.world") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.x") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.y") && plugin.getConfigManager().getConfig("lobby.yml").contains("lobby.spawn.z")) {
 				Location location = new Location(Bukkit.getWorld(plugin.getConfigManager().getConfig("lobby.yml").getString("lobby.spawn.world")), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.x"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.y"), plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.z"));
 				location.setPitch((float) plugin.getConfigManager().getConfig("lobby.yml").getDouble("lobby.spawn.pitch"));
@@ -192,10 +192,10 @@ public class PlayerListener implements Listener {
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.getScore(plugin.getBungeeCord().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -209,10 +209,10 @@ public class PlayerListener implements Listener {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -233,7 +233,7 @@ public class PlayerListener implements Listener {
 	public void onPlayerQuit(PlayerQuitEvent e) {
 		Player player = e.getPlayer();
 
-		if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+		if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 			e.setQuitMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -243,10 +243,10 @@ public class PlayerListener implements Listener {
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.getScore(plugin.getBungeeCord().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -260,10 +260,10 @@ public class PlayerListener implements Listener {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -318,16 +318,16 @@ public class PlayerListener implements Listener {
 				player.removePotionEffect(potionEffect.getType());
 			}
 			player.updateInventory();
-		} else if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 			e.setQuitMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			int neededPlayers = plugin.getConfigManager().getConfig("config.yml").getInt("bungeecord.needed-players");
 			if ((Bukkit.getOnlinePlayers().size() - 1) < neededPlayers) {
 				Bukkit.getScheduler().cancelTask(plugin.getBungeeCord().getTimerManager().getStartTimerID());
 
-				plugin.getBungeeCord().gameState = GameState.WAITING;
+				plugin.getBungeeCord().state = ArenaState.WAITING;
 
-				Bukkit.getPluginManager().callEvent(new GameStateChangeEvent(GameState.WAITING, Bukkit.getOnlinePlayers().size()));
+				Bukkit.getPluginManager().callEvent(new ArenaStateChangeEvent(ArenaState.WAITING, Bukkit.getOnlinePlayers()));
 			}
 
 			for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -337,10 +337,10 @@ public class PlayerListener implements Listener {
 					for (String entry : scoreboard.getEntries()) {
 						scoreboard.resetScores(entry);
 					}
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.getScore(plugin.getBungeeCord().scoreboardScore(ChatColor.translateAlternateColorCodes('&', "&1"), scoreboard)).setScore(6);
@@ -354,10 +354,10 @@ public class PlayerListener implements Listener {
 					ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 					Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
 					Objective objective = scoreboard.registerNewObjective("SpeedBuilders", "dummy");
-					if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+					if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-WAITING_FOR_PLAYERS")));
 					}
-					if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+					if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', translate("SBOARD-STARTING_IN").replaceAll("%TIME%", plugin.getBungeeCord().getTimerManager().timeString(plugin.getBungeeCord().getTimerManager().getStartTime()))));
 					}
 					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -412,7 +412,7 @@ public class PlayerListener implements Listener {
 				player.removePotionEffect(potionEffect.getType());
 			}
 			player.updateInventory();
-		} else if (plugin.getBungeeCord().gameState == GameState.GAME_STARTING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.BEGINNING) {
 			e.setQuitMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = plugin.getBungeeCord().plots.get(player.getName());
@@ -581,7 +581,7 @@ public class PlayerListener implements Listener {
 				player.removePotionEffect(potionEffect.getType());
 			}
 			player.updateInventory();
-		} else if (plugin.getBungeeCord().gameState == GameState.SHOWCASING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.DISPLAYING) {
 			e.setQuitMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = plugin.getBungeeCord().plots.get(player.getName());
@@ -750,7 +750,7 @@ public class PlayerListener implements Listener {
 				player.removePotionEffect(potionEffect.getType());
 			}
 			player.updateInventory();
-		} else if (plugin.getBungeeCord().gameState == GameState.BUILDING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.BUILDING) {
 			e.setQuitMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = plugin.getBungeeCord().plots.get(player.getName());
@@ -923,7 +923,7 @@ public class PlayerListener implements Listener {
 				player.removePotionEffect(potionEffect.getType());
 			}
 			player.updateInventory();
-		} else if (plugin.getBungeeCord().gameState == GameState.JUDGING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.JUDGING) {
 			e.setQuitMessage(ChatColor.translateAlternateColorCodes('&', translate("PREFIX-CHAT") + translate("MAIN-PLAYER_QUIT")).replaceAll("%PLAYER%", player.getName()));
 
 			String plot = plugin.getBungeeCord().plots.get(player.getName());
@@ -1190,7 +1190,7 @@ public class PlayerListener implements Listener {
 	public void onPlayerInteract(PlayerInteractEvent e) {
 		Player player = e.getPlayer();
 		Action action = e.getAction();
-		if (plugin.getBungeeCord().gameState == GameState.WAITING) {
+		if (plugin.getBungeeCord().state == ArenaState.WAITING) {
 			if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 				if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 					e.setCancelled(true);
@@ -1216,7 +1216,7 @@ public class PlayerListener implements Listener {
 					}
 				}
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.STARTING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.STARTING) {
 			if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 				if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 					e.setCancelled(true);
@@ -1242,7 +1242,7 @@ public class PlayerListener implements Listener {
 					}
 				}
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.SHOWCASING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.DISPLAYING) {
 			if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 				if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 					e.setCancelled(true);
@@ -1268,7 +1268,7 @@ public class PlayerListener implements Listener {
 					}
 				}
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.BUILDING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.BUILDING) {
 			if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 				if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 					e.setCancelled(true);
@@ -1337,7 +1337,7 @@ public class PlayerListener implements Listener {
 					}
 				}
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.JUDGING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.JUDGING) {
 			if (player.getItemInHand().getType() == Material.CLOCK && player.getItemInHand().hasItemMeta() && player.getItemInHand().getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', translate("MAIN-LOBBY_ITEM")))) {
 				if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
 					e.setCancelled(true);
@@ -1369,7 +1369,7 @@ public class PlayerListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerMove(PlayerMoveEvent e) {
 		Player player = e.getPlayer();
-		if (plugin.getBungeeCord().gameState == GameState.GAME_STARTING) {
+		if (plugin.getBungeeCord().state == ArenaState.BEGINNING) {
 			if (plugin.getBungeeCord().plots.containsKey(player.getName())) {
 				if (((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()))) {
 					Location location = e.getFrom();
@@ -1378,7 +1378,7 @@ public class PlayerListener implements Listener {
 					e.setTo(location);
 				}
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.SHOWCASING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.DISPLAYING) {
 			if (plugin.getBungeeCord().plots.containsKey(player.getName())) {
 				if (!isPlayerInsideAsPlayer(e.getTo(), new Location(player.getWorld(), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.x1"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.y1"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.z1")), new Location(player.getWorld(), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.x2"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.y2"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.z2")))) {
 					String plot = plugin.getBungeeCord().plots.get(player.getName());
@@ -1397,7 +1397,7 @@ public class PlayerListener implements Listener {
 					//
 				}
 			}
-		} else if (plugin.getBungeeCord().gameState == GameState.BUILDING) {
+		} else if (plugin.getBungeeCord().state == ArenaState.BUILDING) {
 			if (plugin.getBungeeCord().plots.containsKey(player.getName())) {
 				if (!isPlayerInsideAsPlayer(e.getTo(), new Location(player.getWorld(), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.x1"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.y1"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.z1")), new Location(player.getWorld(), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.x2"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.y2"), plugin.getConfigManager().getConfig("maps.yml").getInt("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".area.z2")))) {
 					String plot = plugin.getBungeeCord().plots.get(player.getName());
@@ -1439,7 +1439,7 @@ public class PlayerListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerToggleFlight(PlayerToggleFlightEvent e) {
 		final Player player = e.getPlayer();
-		if (plugin.getBungeeCord().gameState == GameState.BUILDING) {
+		if (plugin.getBungeeCord().state == ArenaState.BUILDING) {
 			if (!plugin.getBungeeCord().playersDoubleJumpCooldowned.containsKey(player.getName())) {
 				if (plugin.getBungeeCord().plots.containsKey(player.getName())) {
 					e.setCancelled(true);
@@ -1465,7 +1465,7 @@ public class PlayerListener implements Listener {
 				player.updateInventory();
 			} else {
 				if (player.hasPermission("sb.command.setup")) {
-					if (plugin.getBungeeCord().gameState != GameState.WAITING && plugin.getBungeeCord().gameState != GameState.BUILDING) {
+					if (plugin.getBungeeCord().state != ArenaState.WAITING && plugin.getBungeeCord().state != ArenaState.BUILDING) {
 						e.setCancelled(true);
 						player.updateInventory();
 					} else {
@@ -1485,7 +1485,7 @@ public class PlayerListener implements Listener {
 						}
 					}
 				} else {
-					if (plugin.getBungeeCord().gameState != GameState.BUILDING) {
+					if (plugin.getBungeeCord().state != ArenaState.BUILDING) {
 						e.setCancelled(true);
 						player.updateInventory();
 					} else {
@@ -1515,7 +1515,7 @@ public class PlayerListener implements Listener {
 		ItemStack itemStack1 = e.getItemDrop().getItemStack();
 		if (itemStack1 != null) {
 			if (player.hasPermission("sb.command.setup")) {
-				if (plugin.getBungeeCord().gameState != GameState.WAITING) {
+				if (plugin.getBungeeCord().state != ArenaState.WAITING) {
 					e.setCancelled(true);
 					player.updateInventory();
 				} else {
@@ -1544,7 +1544,7 @@ public class PlayerListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockBreak(BlockBreakEvent e) {
 		Player player = e.getPlayer();
-		if (plugin.getBungeeCord().gameState != GameState.WAITING) {
+		if (plugin.getBungeeCord().state != ArenaState.WAITING) {
 			e.getBlock().getRelative(BlockFace.UP).getState().update();
 			e.getBlock().getState().update();
 			e.getBlock().getRelative(BlockFace.DOWN).getState().update();
@@ -1560,7 +1560,7 @@ public class PlayerListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockPlace(BlockPlaceEvent e) {
 		Player player = e.getPlayer();
-		if (plugin.getBungeeCord().gameState == GameState.BUILDING) {
+		if (plugin.getBungeeCord().state == ArenaState.BUILDING) {
 			Location location1 = e.getBlock().getLocation();
 			Location location2 = new Location(Bukkit.getWorld(plugin.getBungeeCord().currentMap), plugin.getConfigManager().getConfig("maps.yml").getDouble("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".build-area.x1"), plugin.getConfigManager().getConfig("maps.yml").getDouble("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".build-area.y1"), plugin.getConfigManager().getConfig("maps.yml").getDouble("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".build-area.z1"));
 			Location location3 = new Location(Bukkit.getWorld(plugin.getBungeeCord().currentMap), plugin.getConfigManager().getConfig("maps.yml").getDouble("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".build-area.x2"), plugin.getConfigManager().getConfig("maps.yml").getDouble("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".build-area.y2"), plugin.getConfigManager().getConfig("maps.yml").getDouble("maps." + plugin.getBungeeCord().currentMap + ".plots." + plugin.getBungeeCord().plots.get(player.getName()) + ".build-area.z2"));

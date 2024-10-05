@@ -1,10 +1,9 @@
 package ee.mathiaskivi.speedbuilders.multiworld.listener;
 
 import ee.mathiaskivi.speedbuilders.SpeedBuilders;
+import ee.mathiaskivi.speedbuilders.api.game.ArenaState;
 import ee.mathiaskivi.speedbuilders.multiworld.Arena;
-import ee.mathiaskivi.speedbuilders.utility.GameState;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -19,8 +18,6 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-import static ee.mathiaskivi.speedbuilders.utility.Translations.translate;
-
 public class WorldListener implements Listener {
 	private SpeedBuilders plugin = (SpeedBuilders) Bukkit.getPluginManager().getPlugin("SpeedBuilders");
 
@@ -29,7 +26,7 @@ public class WorldListener implements Listener {
 		Arena arena = plugin.getMultiWorld().getArenaManager().getArena(e.getBlock().getWorld().getName());
 
 		if (arena != null) {
-			if (arena.getGameState() == GameState.BUILDING) {
+			if (arena.getState() == ArenaState.BUILDING) {
 				Player player = e.getPlayer();
 				Location location = e.getBlock().getLocation().add(0.5, 1, 0.5);
 
@@ -72,7 +69,7 @@ public class WorldListener implements Listener {
 		Arena arena = plugin.getMultiWorld().getArenaManager().getArena(e.getBlock().getWorld().getName());
 
 		if (arena != null) {
-			if (arena.getGameState() == GameState.GAME_STARTING || arena.getGameState() == GameState.SHOWCASING || arena.getGameState() == GameState.BUILDING || arena.getGameState() == GameState.JUDGING) {
+			if (arena.getState() == ArenaState.BEGINNING || arena.getState() == ArenaState.DISPLAYING || arena.getState() == ArenaState.BUILDING || arena.getState() == ArenaState.JUDGING) {
 				if (e.getChangedType().toString().endsWith("_BARS")
 						|| e.getChangedType().toString().endsWith("_FENCE")
 						|| e.getChangedType().toString().endsWith("_GATE")
