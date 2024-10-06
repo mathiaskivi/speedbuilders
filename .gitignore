@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+out/
+*.iml
+*.ipr
+*.iws
+
+# macOS
+.name
+
+# RunServer (https://github.com/jpenilla/run-task)
+run/

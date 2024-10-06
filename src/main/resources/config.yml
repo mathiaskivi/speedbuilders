@@ -1,0 +1,42 @@
+plugin:
+  version: "none"  # BungeeCord version = "bungeecord". MultiWorld version = "multiworld".
+  command-visible: true  # Command /speedbuilders can be seen by everyone = "true". Command /speedbuilders can be seen only by operators = "false".
+
+bungeecord:
+  start-time: 15  # Seconds
+  game-start-time: 10  # Seconds
+  showcase-time: 10  # Seconds
+  build-time: 40  # Seconds
+  judge-time: 10  # Seconds
+  needed-players: 4  # Players
+  game-ending-mode: "reload-1"  # Reload mode 1 (players will stay on the server) = "reload-1". Reload mode 2 (players will be sent to the lobby server) = "reload-2". Restart mode (Only available on Spigot) = "restart". Stop mode = "stop".
+  lobby-server-name: "lobby"
+  custom-motd:
+    enabled: true
+    message: "&3&lSpeedBuilders &7[The game is in %GAMESTATE% &7mode right now]"
+
+stats-item-slot: 8
+lobby-item-slot: 9
+
+gamemode: "survival"  # Player has survival gamemode in lobby = "survival". Player has creative gamemode in lobby = "creative". Player has adventure gamemode in lobby = "adventure". Player has spectator gamemode in lobby = "spectator".
+
+stats:
+  enabled: true
+  system-type: "sqlite"  # SQLite database = "sqlite". MySQL database = "mysql".
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  database: "speedbuilders"
+  username: "username"
+  password: "password"
+
+winner-commands:
+  enabled: false
+  commands:
+    - "give %PLAYER% diamond_block 1"
+
+loser-commands:
+  enabled: false
+  commands:
+    - "give %PLAYER% diamond_block 1"

@@ -1,0 +1,11 @@
+api-version: 1.21
+main: ee.mathiaskivi.speedbuilders.SpeedBuilders
+
+authors: [ "Mathias Kivi" ]
+name: SpeedBuilders
+version: %VERSION%
+
+commands:
+  speedbuilders:
+    aliases: sb
+    description: Command for SpeedBuilders
